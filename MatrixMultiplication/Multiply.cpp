@@ -1,5 +1,4 @@
 #include "Multiply.h"
-using namespace concurrency;
 
 vector<vector<int>> bruteForceMultiply (vector<vector<int>>& A, vector<vector<int>>& B)
 {
@@ -49,7 +48,7 @@ vector<vector<int>> matDif (vector<vector<int>>& A, vector<vector<int>>& B)
 int padding(int n)
 {
 	int c = 1;
-	while (c * 20 < n)
+	while (c * 140 < n)
 	{
 		c *= 2;
 	}
@@ -90,7 +89,7 @@ vector<vector<int>> Strassen (vector<vector<int>>& A, vector<vector<int>>& B)
 vector<vector<int>> StrassenStep(vector<vector<int>> A, vector<vector<int>> B)
 {
 	unsigned int n = A.size();
-	if (n < 30)
+	if (n < 150)
 		return bruteForceMultiply(A, B);
 	else
 	{
@@ -139,35 +138,76 @@ vector<vector<int>> StrassenStep(vector<vector<int>> A, vector<vector<int>> B)
 		vector<vector<int>> V2 = StrassenStep(A11, matDif(B12, B22));
 
 		vector<vector<int>> C(A.size(), vector<int>(A.size()));
-		for (int i = 0; i < n; i++)
+		for (unsigned int i = 0; i < n; i++)
 		{
-			for (int j = 0; j < n; j++)
+			for (unsigned int j = 0; j < n; j++)
 			{
 				C[i][j] = D1[i][j] + D2[i][j] + V1[i][j] - H1[i][j];
 			}
 		}
-		for (int i = 0; i < n; i++)
+		for (unsigned int i = 0; i < n; i++)
 		{
-			for (int j = n; j < B.size(); j++)
+			for (unsigned int j = n; j < B.size(); j++)
 			{
 				C[i][j] = V2[i][j - n] + H1[i][j - n];
 			}
 		}
-		for (int i = n; i < A.size(); i++)
+		for (unsigned int i = n; i < A.size(); i++)
 		{
-			for (int j = 0; j < n; j++)
+			for (unsigned int j = 0; j < n; j++)
 			{
 				C[i][j] = V1[i - n][j] + H2[i - n][j];
 			}
 		}
-		for (int i = n; i < A.size(); i++)
+		for (unsigned int i = n; i < A.size(); i++)
 		{
-			for (int j = n; j < B.size(); j++)
+			for (unsigned int j = n; j < B.size(); j++)
 			{
 				C[i][j] = D1[i - n][j - n] + D3[i - n][j - n] + V2[i - n][j - n] - H2[i - n][j - n];
 			}
 		}
 		return C;
 
+	}
+}
+
+vector<vector<int>> threadMultiply (vector<vector<int>>& A, vector<vector<int>>& B)
+{
+	int n = A.size();
+	vector<vector<int>> C(n, vector<int>(n, 0));
+	thread t0(grid8Multiply, ref(A), ref(B), ref(C), 0);
+	thread t1(grid8Multiply, ref(A), ref(B), ref(C), 1);
+	thread t2(grid8Multiply, ref(A), ref(B), ref(C), 2);
+	thread t3(grid8Multiply, ref(A), ref(B), ref(C), 3);
+	thread t4(grid8Multiply, ref(A), ref(B), ref(C), 4);
+	thread t5(grid8Multiply, ref(A), ref(B), ref(C), 5);
+	thread t6(grid8Multiply, ref(A), ref(B), ref(C), 6);
+	thread t7(grid8Multiply, ref(A), ref(B), ref(C), 7);
+
+	t0.join();
+	t1.join();
+	t2.join();
+	t3.join();
+	t4.join();
+	t5.join();
+	t6.join();
+	t7.join();
+
+	return C;
+}
+
+void grid8Multiply (vector<vector<int>>& A, vector<vector<int>>& B, vector<vector<int>>& C, int ind)
+{
+	ind = ind % 8;
+	int n = A.size();
+	for (int i = ind; i < n; i += 8)
+	{
+		for (int j = 0; j < n; j++)
+		{
+			for (int k = 0; k < n; k++)
+			{
+				C[i][j] += A[i][k] * B[k][j];
+			}
+		}
 	}
 }
